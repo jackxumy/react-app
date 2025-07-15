@@ -77,23 +77,21 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
       // 设置地形位置
       this.terrainMesh.position.set(mercator.x, mercator.y, mercator.z);
       this.terrainMesh.scale.set(scale, scale, scale);
-      //this.terrainMesh.rotation.y = Math.PI/2; // 水平放置
       
 
       // 设置水面位置 - 稍微高于地形以避免遮挡
       this.waterMesh.position.set(mercator.x, mercator.y, mercator.z + 0.001 * scale);
       this.waterMesh.scale.set(scale, scale, scale);
-      //this.waterMesh.rotation.y= Math.PI/2; // 水平放置
       
       // 设置渲染顺序 - 地形先渲染，水面后渲染
-      this.terrainMesh.renderOrder = 1;
-      this.waterMesh.renderOrder = 2;
+      // this.terrainMesh.renderOrder = 1;
+      // this.waterMesh.renderOrder = 2;
       
       // 确保水面材质的透明度设置正确
       const waterMaterial = this.waterMesh.material as THREE.ShaderMaterial;
-      waterMaterial.transparent = true;
-      waterMaterial.depthWrite = false;
-      waterMaterial.depthTest = true;
+      waterMaterial.transparent = true; // 启用了透明度支持
+      waterMaterial.depthWrite = false; // 禁用了深度写入
+      waterMaterial.depthTest = true; // 启用了深度测试
               
       // 添加到场景
       this.scene.add(this.terrainMesh);
@@ -447,12 +445,14 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
     const m = new THREE.Matrix4().fromArray(matrix);
     
     // 直接使用 Mapbox 的投影矩阵
-    this.camera.projectionMatrix = m;
+    this.camera.projectionMatrix = m; // 投影矩阵
+    //matrixWorldInverse
+    // 世界逆矩阵被重置为默认状态，通常意味着相机位于世界坐标系的原点，且没有旋转或缩放
     this.camera.matrixWorldInverse = new THREE.Matrix4();
 
     // 更新水面动画
     if (this.waterMesh) {
-      this.updateWaterUniforms();
+      //this.updateWaterUniforms();
     }
     
     // 重置渲染器状态并渲染
@@ -467,34 +467,6 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
     
     // 重置深度测试状态，避免与 Mapbox 冲突
     gl.enable(gl.DEPTH_TEST);
-  }
-
-  private updateWaterUniforms(): void {
-    if (!this.waterMesh) return;
-    
-    const material = this.waterMesh.material as THREE.ShaderMaterial & {
-      waterTextures: THREE.Texture[];
-      startTime: number;
-    };
-    
-    if (!material.uniforms || !material.waterTextures) return;
-
-    const currentTime = Date.now();
-    const durationTime = 2000; // 2秒切换周期
-    const numRasters = material.waterTextures.length;
-    
-    const timeElapsed = (currentTime - material.startTime) % (durationTime * numRasters);
-    const currentStep = Math.floor(timeElapsed / durationTime);
-    const nextStep = (currentStep + 1) % numRasters;
-    const stepProgress = (timeElapsed % durationTime) / durationTime;
-
-    // 更新HUV纹理
-    material.uniforms.huvMapBefore.value = material.waterTextures[currentStep];
-    material.uniforms.huvMapAfter.value = material.waterTextures[nextStep];
-    
-    // 更新时间参数
-    material.uniforms.time.value = performance.now() * 0.001;
-    material.uniforms.timeStep.value = stepProgress;
   }
 
   onRemove(map: mapboxgl.Map, gl: WebGLRenderingContext): void {
