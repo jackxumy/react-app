@@ -1,5 +1,5 @@
 import mapboxgl from 'mapbox-gl';
-import { mat4 } from 'gl-matrix';
+//import { mat4 } from 'gl-matrix';
 
 export class TriangleTestLayer implements mapboxgl.CustomLayerInterface {
     id = 'TriangleTestLayer';
