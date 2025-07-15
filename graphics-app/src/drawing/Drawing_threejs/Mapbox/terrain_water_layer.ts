@@ -56,13 +56,13 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
       // 设置地形位置
       this.terrainMesh.position.set(mercator.x, mercator.y, mercator.z);
       this.terrainMesh.scale.set(scale, scale, scale);
-      //this.terrainMesh.rotation.y = Math.PI/2; // 水平放置
+      this.terrainMesh.rotation.y = Math.PI/2; // 水平放置
       
 
       // 设置水面位置
       this.waterMesh.position.set(mercator.x, mercator.y, mercator.z);
       this.waterMesh.scale.set(scale, scale, scale);
-      //this.waterMesh.rotation.y= Math.PI/2; // 水平放置
+      this.waterMesh.rotation.y= Math.PI/2; // 水平放置
 
       // 添加到场景
       this.scene.add(this.terrainMesh);
@@ -179,6 +179,17 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
 
     // 创建水面几何体
     const geometry = new THREE.PlaneGeometry(25155, 13765, 640, 640);
+
+     // 修复UV坐标映射，确保地形正确对应高度图
+    const uvAttribute = geometry.getAttribute('uv');
+    const uvArray = uvAttribute.array as Float32Array;
+    
+    for (let i = 0; i < uvArray.length; i += 2) {
+      // 翻转V坐标以修复地形镜像问题
+      uvArray[i + 1] = 1.0 - uvArray[i + 1];
+    }
+    
+    uvAttribute.needsUpdate = true;
 
     // 水面参数
     const waterNormalY = 20;
