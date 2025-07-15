@@ -15,6 +15,7 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
   private terrainMesh: THREE.Mesh | null = null;
   private waterMesh: THREE.Mesh | null = null;
   private refCenter: [number, number] = [114.028140134, 22.472900679]; // 场景中心坐标
+  private animationId: number | null = null; // 动画循环ID
 
   onAdd(map: mapboxgl.Map, gl: WebGLRenderingContext): void {
     this.map = map;
@@ -22,20 +23,40 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
     
     // 创建透视相机
     this.camera = new THREE.PerspectiveCamera(
-      window.innerWidth / window.innerHeight, // 宽高比
+        75, // 视场角
+        window.innerWidth / window.innerHeight, // 宽高比
+        0.1, // 近裁剪面
+        1000 // 远裁剪面
     );
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: map.getCanvas(),
       context: gl,
-      antialias: true
+      antialias: true // 抗锯齿
     });
-    this.renderer.autoClear = false;
+    this.renderer.autoClear = false; // 关闭缓冲区帧清除，保证多个render都可以渲染且不被清除
 
     this.textureLoader = new THREE.TextureLoader();
 
     // 初始化场景
     this.initScene();
+    
+    // 启动动画循环
+    this.startAnimationLoop();
+  }
+
+  private startAnimationLoop(): void {
+    const animate = () => {
+      // 强制地图重绘以触发render方法
+      if (this.map) {
+        this.map.triggerRepaint();
+      }
+      
+      // 继续动画循环
+      this.animationId = requestAnimationFrame(animate);
+    };
+    
+    animate();
   }
 
   private async initScene(): Promise<void> {
@@ -56,14 +77,24 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
       // 设置地形位置
       this.terrainMesh.position.set(mercator.x, mercator.y, mercator.z);
       this.terrainMesh.scale.set(scale, scale, scale);
-      this.terrainMesh.rotation.y = Math.PI/2; // 水平放置
+      //this.terrainMesh.rotation.y = Math.PI/2; // 水平放置
       
 
-      // 设置水面位置
-      this.waterMesh.position.set(mercator.x, mercator.y, mercator.z);
+      // 设置水面位置 - 稍微高于地形以避免遮挡
+      this.waterMesh.position.set(mercator.x, mercator.y, mercator.z + 0.001 * scale);
       this.waterMesh.scale.set(scale, scale, scale);
-      this.waterMesh.rotation.y= Math.PI/2; // 水平放置
-
+      //this.waterMesh.rotation.y= Math.PI/2; // 水平放置
+      
+      // 设置渲染顺序 - 地形先渲染，水面后渲染
+      this.terrainMesh.renderOrder = 1;
+      this.waterMesh.renderOrder = 2;
+      
+      // 确保水面材质的透明度设置正确
+      const waterMaterial = this.waterMesh.material as THREE.ShaderMaterial;
+      waterMaterial.transparent = true;
+      waterMaterial.depthWrite = false;
+      waterMaterial.depthTest = true;
+              
       // 添加到场景
       this.scene.add(this.terrainMesh);
       this.scene.add(this.waterMesh);
@@ -336,11 +367,13 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
       transparent: true,
-      depthWrite: true,
-      blending: THREE.CustomBlending, // CustomBlending,
+      depthWrite: false, // 透明水面不应该写入深度缓冲
+      depthTest: true,   // 但仍需要深度测试
+      blending: THREE.CustomBlending,
       blendSrc: THREE.SrcAlphaFactor,
       blendDst: THREE.OneMinusSrcAlphaFactor,
 		  blendEquation: THREE.AddEquation,
+      side: THREE.DoubleSide, // 确保水面两面都可见
     });
 
     const startTime = Date.now();
@@ -424,6 +457,12 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
     
     // 重置渲染器状态并渲染
     this.renderer.resetState();
+    
+    // 确保深度测试和深度写入正确设置
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    
+    // 渲染场景
     this.renderer.render(this.scene, this.camera);
     
     // 重置深度测试状态，避免与 Mapbox 冲突
@@ -459,6 +498,12 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
   }
 
   onRemove(map: mapboxgl.Map, gl: WebGLRenderingContext): void {
+    // 停止动画循环
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+    
     // 清理 Three.js 场景
     this.scene.clear();
 
