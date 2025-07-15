@@ -449,11 +449,6 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
     //matrixWorldInverse
     // 世界逆矩阵被重置为默认状态，通常意味着相机位于世界坐标系的原点，且没有旋转或缩放
     this.camera.matrixWorldInverse = new THREE.Matrix4();
-
-    // 更新水面动画
-    if (this.waterMesh) {
-      //this.updateWaterUniforms();
-    }
     
     // 重置渲染器状态并渲染
     this.renderer.resetState();
