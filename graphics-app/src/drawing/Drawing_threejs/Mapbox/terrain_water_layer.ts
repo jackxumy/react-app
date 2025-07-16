@@ -72,26 +72,29 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
 
       // 计算场景位置
       const mercator = mapboxgl.MercatorCoordinate.fromLngLat(this.refCenter, 0);
+      // 一米在web墨卡托中有多长（在0到1中例如0.000002）
       const scale = mercator.meterInMercatorCoordinateUnits();
 
       // 设置地形位置
       this.terrainMesh.position.set(mercator.x, mercator.y, mercator.z);
-      this.terrainMesh.scale.set(scale, scale, scale);
+      // 设置模型单位1在坐标轴中长度，并反转Y轴以匹配Web墨卡托坐标系
+      this.terrainMesh.scale.set(scale, -scale, scale);
       
 
       // 设置水面位置 - 稍微高于地形以避免遮挡
       this.waterMesh.position.set(mercator.x, mercator.y, mercator.z + 0.001 * scale);
-      this.waterMesh.scale.set(scale, scale, scale);
+      // 同样反转Y轴
+      this.waterMesh.scale.set(scale, -scale, scale);
       
       // 设置渲染顺序 - 地形先渲染，水面后渲染
       // this.terrainMesh.renderOrder = 1;
       // this.waterMesh.renderOrder = 2;
       
       // 确保水面材质的透明度设置正确
-      const waterMaterial = this.waterMesh.material as THREE.ShaderMaterial;
-      waterMaterial.transparent = true; // 启用了透明度支持
-      waterMaterial.depthWrite = false; // 禁用了深度写入
-      waterMaterial.depthTest = true; // 启用了深度测试
+        //   const waterMaterial = this.waterMesh.material as THREE.ShaderMaterial;
+        //   waterMaterial.transparent = true; // 启用了透明度支持
+        //   waterMaterial.depthWrite = false; // 禁用了深度写入
+        //   waterMaterial.depthTest = true; // 启用了深度测试
               
       // 添加到场景
       this.scene.add(this.terrainMesh);
@@ -131,15 +134,16 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
     const geometry = new THREE.PlaneGeometry(25155, 13765, 640, 640);
     
     // 修复UV坐标映射，确保地形正确对应高度图
-    const uvAttribute = geometry.getAttribute('uv');
-    const uvArray = uvAttribute.array as Float32Array;
+    // const uvAttribute = geometry.getAttribute('uv');
+    // console.log(uvAttribute);
+    // const uvArray = uvAttribute.array as Float32Array;
+    // // U 表示水平方向，V 表示垂直方向基数为u偶数为v
+    // for (let i = 0; i < uvArray.length; i += 2) {
+    //   // 翻转V坐标以修复地形镜像问题
+    //   uvArray[i + 1] = 1.0 - uvArray[i + 1];
+    // }
     
-    for (let i = 0; i < uvArray.length; i += 2) {
-      // 翻转V坐标以修复地形镜像问题
-      uvArray[i + 1] = 1.0 - uvArray[i + 1];
-    }
-    
-    uvAttribute.needsUpdate = true;
+    // uvAttribute.needsUpdate = true;
 
     const terrainNormalY = 0.2;
     const terrainColor = new THREE.Color("#FFFFFF");
@@ -210,15 +214,16 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
     const geometry = new THREE.PlaneGeometry(25155, 13765, 640, 640);
 
      // 修复UV坐标映射，确保地形正确对应高度图
-    const uvAttribute = geometry.getAttribute('uv');
-    const uvArray = uvAttribute.array as Float32Array;
+     // uv坐标数量为641*641
+    // const uvAttribute = geometry.getAttribute('uv');
+    // const uvArray = uvAttribute.array as Float32Array;
     
-    for (let i = 0; i < uvArray.length; i += 2) {
-      // 翻转V坐标以修复地形镜像问题
-      uvArray[i + 1] = 1.0 - uvArray[i + 1];
-    }
+    // for (let i = 0; i < uvArray.length; i += 2) {
+    //   // 翻转V坐标以修复地形镜像问题
+    //   uvArray[i + 1] = 1.0 - uvArray[i + 1];
+    // }
     
-    uvAttribute.needsUpdate = true;
+    // uvAttribute.needsUpdate = true;
 
     // 水面参数
     const waterNormalY = 20;
@@ -364,9 +369,9 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
       uniforms: uniforms,
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
-      transparent: true,
-      depthWrite: false, // 透明水面不应该写入深度缓冲
-      depthTest: true,   // 但仍需要深度测试
+      // transparent: true,
+      // depthWrite: false, // 透明水面不应该写入深度缓冲
+      // depthTest: true,   // 但仍需要深度测试
       blending: THREE.CustomBlending,
       blendSrc: THREE.SrcAlphaFactor,
       blendDst: THREE.OneMinusSrcAlphaFactor,
@@ -451,7 +456,7 @@ export class TerrainWaterLayer implements mapboxgl.CustomLayerInterface {
     this.camera.matrixWorldInverse = new THREE.Matrix4();
     
     // 重置渲染器状态并渲染
-    this.renderer.resetState();
+    //this.renderer.resetState();
     
     // 确保深度测试和深度写入正确设置
     gl.enable(gl.DEPTH_TEST);

@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { MyObjLayer } from '../drawing/Drawing_webgl2/Mapbox_Layers/bunny';
-import { CustomThreeLayer } from '../drawing/Drawing_threejs/Mapbox/test_3js_layer';
+//import { MyObjLayer } from '../drawing/Drawing_webgl2/Mapbox_Layers/bunny';
+//import { CustomThreeLayer } from '../drawing/Drawing_threejs/Mapbox/test_3js_layer';
 import { TerrainWaterLayer } from '../drawing/Drawing_threejs/Mapbox/terrain_water_layer';
 
 // 注意：您需要创建一个 Mapbox 账户并获取访问令牌
@@ -12,7 +12,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoieWNzb2t1IiwiYSI6ImNrenozdWdodDAza3EzY3BtdHh4c
 const MapboxPage: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const initialLng = 114.028140134; // 北京坐标lng = 139.6917, lat = 35.6895
+  const initialLng = 114.028140134; //
   const initialLat = 22.472900679;
   const initialZoom = 11;
   // 用于显示当前地图状态的状态变量，不作为地图初始化的依赖
@@ -45,14 +45,14 @@ const MapboxPage: React.FC = () => {
       
       map.current.on('load', () => {
         // 在此处添加您的自定义图层代码
-        const center = { lng: 116.50, lat: 39.99, alt: 0 }; // 天安门经纬度
-        const MyObj = new MyObjLayer(center, 1000);
-        const threejs = new CustomThreeLayer();
+        //const center = { lng: 116.50, lat: 39.99, alt: 0 }; // 天安门经纬度
+        //const MyObj = new MyObjLayer(center, 1000);
+        //const threejs = new CustomThreeLayer();
         const terrainWaterLayer = new TerrainWaterLayer();
         map.current?.addLayer(terrainWaterLayer);
         // 先添加 Three.js 图层，然后是 WebGL 图层
-        map.current?.addLayer(MyObj);
-        map.current?.addLayer(threejs);
+        //map.current?.addLayer(MyObj);
+        //map.current?.addLayer(threejs);
         
       });
       
